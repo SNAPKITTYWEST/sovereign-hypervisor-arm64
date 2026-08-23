@@ -1,6 +1,34 @@
-# Sovereign ARM64 EL2 Hypervisor
+<p align="center">
+  <img src="https://raw.githubusercontent.com/SNAPKITTYWEST/SNAPKITTYWEST/main/bobs-games/assets/voxel-snapkitty.svg" width="96" />
+</p>
 
-Custom execution engine for Qualcomm Snapdragon Oryon cores. Zero dependency on Apple Hypervisor.framework, Microsoft Hyper-V, or KVM.
+<h1 align="center">Sovereign ARM64 EL2 Hypervisor</h1>
+
+<p align="center">
+  <strong>Custom execution engine for Qualcomm Snapdragon Oryon · Zero external dependencies</strong>
+</p>
+
+<p align="center">
+  <a href="LICENSE.tri"><img src="https://img.shields.io/badge/license-AGPL%20%7C%20BSL%201.1%20%7C%20MIT-blue" /></a>
+  <img src="https://img.shields.io/badge/target-Snapdragon%20Oryon%20ARMv9-orange" />
+  <img src="https://img.shields.io/badge/EL2-bare%20metal-critical" />
+  <img src="https://img.shields.io/badge/6502-JIT%20agents-brightgreen" />
+  <img src="https://img.shields.io/badge/deps-ZERO-black" />
+  <img src="https://img.shields.io/badge/libc-NO-red" />
+  <a href="https://github.com/SNAPKITTYWEST/sovereign-stack"><img src="https://img.shields.io/badge/stack-Sovereign%20Stack-blueviolet" /></a>
+</p>
+
+---
+
+## What This Is
+
+A from-scratch ARM64 EL2 hypervisor targeting Qualcomm Snapdragon Oryon cores. No Apple Hypervisor.framework. No Microsoft Hyper-V. No KVM. No libc. No CRT.
+
+Bare metal from Exception Level 2 entry. Zero external dependencies.
+
+Each sovereign agent runs in a provably-deterministic **6502 VM**, JIT-compiled to native AArch64 via the DBT engine. Hardware-level isolation via Stage 2 MMU with VMID-tagged TLB entries.
+
+---
 
 ## Architecture
 
@@ -23,8 +51,7 @@ Custom execution engine for Qualcomm Snapdragon Oryon cores. Zero dependency on 
 │  │  │ MMU       │ │  Trap    │ │  (Adreno       │  │    │
 │  │  │ (IPA→PA)  │ │  Loop    │ │   Passthrough) │  │    │
 │  │  └───────────┘ └──────────┘ └────────────────┘  │    │
-│  │                                                   │    │
-│  └───────────────────────────────────────────────────┘    │
+│  └───────────────────────────────────────────────────┘   │
 │                          │                               │
 ├──────────────────────────┼───────────────────────────────┤
 │                          ▼                               │
@@ -34,6 +61,8 @@ Custom execution engine for Qualcomm Snapdragon Oryon cores. Zero dependency on 
 │  └─────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────┘
 ```
+
+---
 
 ## Components
 
@@ -45,6 +74,8 @@ Custom execution engine for Qualcomm Snapdragon Oryon cores. Zero dependency on 
 | 4 | DBT JIT | `src/dbt/jit_engine.c` | 6502→IR→AArch64 translation, SVE2/NEON emit |
 | 5 | VirtIO-GPU | `src/virtio/virtio_gpu.c` | Guest rendering → Vulkan on Adreno |
 
+---
+
 ## Key Design Decisions
 
 - **No libc, no CRT** — bare-metal from EL2 entry. Zero external dependencies.
@@ -53,42 +84,49 @@ Custom execution engine for Qualcomm Snapdragon Oryon cores. Zero dependency on 
 - **Adreno direct** — VirtIO-GPU front-end translates to host Vulkan, bypassing software rendering.
 - **SVE2 vectorization** — DBT emitter targets Oryon's scalable vector extensions for batch operations.
 
-## Target Platform
+---
 
-- **SoC:** Qualcomm Snapdragon X Elite (X1E80100)
-- **CPU:** Qualcomm Oryon (ARMv9.2-A, 12 cores, SVE2)
-- **GPU:** Adreno (Vulkan 1.3)
-- **Memory:** LPDDR5X
-- **Boot:** UEFI → EL2 takeover
+## The Agent Roster
 
-## Build
+Every 6502 VM guest maps to a sovereign agent. The hypervisor is their runtime.
 
-```bash
-# Cross-compile for AArch64 bare-metal
-aarch64-none-elf-gcc -nostdlib -nostartfiles -T linker.ld \
-    -mcpu=cortex-x4 -march=armv9.2-a+sve2 \
-    src/boot/el2_entry.S src/mmu/stage2.c \
-    src/vcpu/trap_loop.c src/dbt/jit_engine.c \
-    src/virtio/virtio_gpu.c \
-    -o sovereign_hypervisor.elf
+| Agent | Role | Color | What they run on this hypervisor |
+|-------|------|-------|----------------------------------|
+| **ORION** | System Architect | 🔵 Blue | EL2 topology mapping, VM layout design |
+| **LEMUR** | Code Engineer | 🟢 Green | DBT JIT code generation, IR optimization |
+| **ECHO** | Research Analyst | 🟣 Purple | Stage 2 MMU research, memory model analysis |
+| **VECTOR** | Security Analyst | 🟠 Orange | Isolation boundary verification, threat modeling |
+| **NEXUS** | Penetration Tester | 🔴 Red | Red team — finds the escape paths before attackers do |
+| **SAGE** | Data Scientist | 🩵 Teal | Performance telemetry, bottleneck analysis |
+| **PIXEL** | UI/UX Designer | 🟡 Yellow | Dashboard, monitoring interface |
+| **LUNA** | Documentation Lead | 🩷 Pink | README, ADRs, invariant documentation |
+| **ATLAS** | DevOps Engineer | 🔷 Navy | CI/CD pipeline, build system |
+| **TITAN** | QA Engineer | 🟤 Gold | Test harness, conformance suite |
+| **PULSE** | Monitoring Specialist | 💠 Cyan | WORM-sealed telemetry, liveness checks |
+| **QUANTUM** | AI/ML Engineer | 💜 Purple | Inference stack, sovereign model runtime |
 
-# Generate binary for UEFI boot
-aarch64-none-elf-objcopy -O binary sovereign_hypervisor.elf sovereign_hypervisor.bin
+Each agent runs as a 6502 guest VM. The hypervisor provides hardware-isolated execution. The WORM chain seals every output. The ERE gates catch violations before they propagate.
+
+---
+
+## Sovereign Stack Integration
+
+```
+Sovereign EL2 Hypervisor (this repo)
+    ↓ runs
+6502 Agent VMs (sovereign-trinity-kernel)
+    ↓ sealed by
+LOCKER WORM Chain (worm-engines)
+    ↓ verified by
+ML-DSA-44 post-quantum signatures
+    ↓ governed by
+Moorish Covenant (sovereign-covenant)
 ```
 
-## Relation to ORTHO-32
-
-ORTHO-32 (PolarFire FPGA) provides **hardware-enforced** memory isolation.
-This hypervisor provides **software-enforced** isolation on commodity ARM silicon.
-
-Same invariants. Same proofs. Different enforcement substrate:
-- ORTHO-32: Isolation in silicon (FPGA fabric, custom RTL)
-- Sovereign Hypervisor: Isolation in ARM EL2 (Stage 2 MMU, hardware VMID tagging)
-
-Both trace back to the same Lean 4 theorems.
+---
 
 ## License
 
-Tri-licensed: BSL-1.1 + AGPL-3.0 + MPL-2.0. See [LICENSE.tri](LICENSE.tri).
-
-Copyright (C) 2026 Jessica L. Williams / SNAPKITTYWEST
+Tri-license — AGPL-3.0 | BSL 1.1 → MIT | MIT  
+Copyright (C) 2026 Ahmad Ali Parr, Jessica L. Williams / SNAPKITTYWEST  
+Bel Esprit D'Accord Irrevocable Trust
